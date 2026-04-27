@@ -9,8 +9,6 @@ name: Deploy AsyncAPI Studio (Archally) to Cloudflare Pages
 # Trigger: push to master (auto) and workflow_dispatch (manual).
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch: {}
 
 permissions:
