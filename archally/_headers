@@ -1,0 +1,12 @@
+# Cloudflare Pages response headers.
+# Deployed from apps/studio/build/_headers (the deploy workflow copies this
+# file into the export output directory before wrangler upload).
+#
+# CSP frame-ancestors restricts who can iframe Studio. Tighten once the
+# architecture-viewer is bound to a stable subdomain (e.g. architecture.archally.dev)
+# and remove *.pages.dev from the allowlist.
+
+/*
+  Content-Security-Policy: frame-ancestors https://*.archally.dev https://*.pages.dev
+  Referrer-Policy: same-origin
+  X-Content-Type-Options: nosniff

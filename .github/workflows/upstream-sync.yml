@@ -1,0 +1,106 @@
+name: Sync from upstream AsyncAPI Studio
+
+# Monthly automated merge of upstream/master into our master via PR.
+# Cadence: 1st of every month at 06:00 UTC (D-11b-impl-3, was weekly per plan,
+# changed to monthly to reduce review noise).
+#
+# Required secret: SYNC_PAT — fine-grained PAT scoped to this repo with
+#   contents: read+write, pull-requests: read+write, workflows: read+write
+# Why a PAT not the default GITHUB_TOKEN: PRs created by GITHUB_TOKEN don't
+# trigger downstream workflow runs (CI on the sync PR wouldn't fire).
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"  # 1st of month, 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_PAT }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "archally-sync-bot"
+          git config user.email "sync-bot@archally.dev"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/asyncapi/studio.git || true
+
+      - name: Fetch upstream
+        run: git fetch upstream master
+
+      - name: Detect upstream commits since last sync
+        id: detect
+        run: |
+          BEHIND=$(git rev-list --count HEAD..upstream/master)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          if [ "$BEHIND" = "0" ]; then
+            echo "Already up to date with upstream."
+          else
+            echo "$BEHIND upstream commit(s) ahead — will open sync PR."
+          fi
+
+      - name: Create sync branch (rebase first; merge as fallback)
+        if: steps.detect.outputs.behind != '0'
+        id: branch
+        run: |
+          BRANCH="upstream-sync/$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH"
+          # Try a clean rebase first — keeps our [archally] commits on top.
+          # On conflict, abort + merge so the PR review surface shows the
+          # conflict markers explicitly to a human reviewer.
+          if git rebase upstream/master; then
+            echo "Rebase clean."
+          else
+            git rebase --abort
+            git merge --no-edit upstream/master || true
+            echo "Rebase failed — falling back to merge. Conflicts left in tree for human review."
+          fi
+          git push origin "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure 'upstream-sync' label exists
+        if: steps.detect.outputs.behind != '0'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+        run: |
+          gh label create upstream-sync \
+            --color "0E8A16" \
+            --description "Automated upstream sync PR" 2>/dev/null || true
+
+      - name: Open sync PR
+        if: steps.detect.outputs.behind != '0'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+        run: |
+          gh pr create \
+            --base master \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --label upstream-sync \
+            --title "chore(sync): merge upstream/master ($(date -u +%Y-%m-%d))" \
+            --body "$(cat <<'BODY'
+          Automated sync from `asyncapi/studio@master`.
+
+          **Commits ahead of fork:** ${{ steps.detect.outputs.behind }}
+
+          ### Reviewer checklist
+
+          - [ ] CI passes (build + visual smoke)
+          - [ ] Archally customizations (Tier-1 C-1..C-4 / Tier-2 C-5..C-9) still applied — `git log --grep '\[archally\]'` should still show every expected commit
+          - [ ] No upstream feature toggle re-enabled what we hide (Tier-2)
+          - [ ] No upstream theme regression — preview deploy renders archally palette
+          - [ ] No new external network calls (privacy regression — C-7)
+          - [ ] `next.config.js` still respects `NEXT_CONFIG_OUTPUT=export` and `PUBLIC_URL`
+
+          See `archally/docs/2026-04-26-rebase-runbook.md` for conflict-resolution playbook.
+          BODY
+          )"

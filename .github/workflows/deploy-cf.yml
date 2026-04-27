@@ -1,0 +1,81 @@
+name: Deploy AsyncAPI Studio (Archally) to Cloudflare Pages
+
+# Step-11b — deploys the forked Studio as a static export to Cloudflare Pages
+# at project `archally-asyncapi-studio`. One Studio instance serves every
+# blueprint project's AsyncAPI specs via the `?url=<spec-url>` query param
+# (decision D-11b-3). Tier-1 customizations (C-1..C-4) deferred — see
+# step-11b-asyncapi-studio-deployment.md in sibling blueprint-schema repo.
+#
+# Trigger: push to master (auto) and workflow_dispatch (manual).
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable corepack (pnpm@9.0.6 from packageManager field)
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          # Mirrors apps/studio/Dockerfile — Studio's transitive deps pull in
+          # puppeteer, which downloads a Chromium binary we don't need for
+          # static export. Skipping shaves ~150MB and ~30s off install.
+          PUPPETEER_SKIP_DOWNLOAD: "true"
+
+      - name: Build Studio (static export)
+        run: pnpm run build:studio
+        env:
+          # NEXT_CONFIG_OUTPUT=export turns Next 14's static export on
+          # (next.config.js reads this env var). Output lands at apps/studio/build/
+          # because next.config.js sets distDir: 'build' (verified in
+          # apps/studio/Dockerfile line 46).
+          NEXT_CONFIG_OUTPUT: export
+          # Empty PUBLIC_URL → assets served from root. CF Pages serves at /,
+          # so no base-path prefix is needed.
+          PUBLIC_URL: ""
+
+      - name: Verify export output exists
+        run: |
+          if [ ! -f apps/studio/build/index.html ]; then
+            echo "::error::Static export missing — apps/studio/build/index.html not found."
+            ls -la apps/studio/build/ || true
+            exit 1
+          fi
+
+      - name: Copy Archally _headers into build
+        run: cp archally/_headers apps/studio/build/_headers
+
+      - name: Ensure Cloudflare Pages project exists
+        run: |
+          npx wrangler pages project create archally-asyncapi-studio \
+            --production-branch master 2>/dev/null || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Pages
+        run: |
+          npx wrangler pages deploy apps/studio/build \
+            --project-name archally-asyncapi-studio \
+            --branch master \
+            --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,0 +1,5 @@
+# Tier-1 customization configs land here in a follow-up step.
+#
+# Planned files (see step-11b-asyncapi-studio-deployment.md, customizations C-1..C-4):
+#   - default-spec-loader.ts  — read ?url= and ?theme= URL params on mount
+#   - disabled-features.json  — list of upstream features hidden in the iframe

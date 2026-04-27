@@ -1,0 +1,10 @@
+/*
+ * Archally theme overrides — placeholder.
+ *
+ * Tier-2 customization C-9 (apply Archally color tokens) lands here in a
+ * follow-up step. For now this file is intentionally empty so the directory
+ * structure is committed and the deploy workflow's copy step has a target.
+ *
+ * Source of tokens: `@archally/viewer-shell` (sibling repo blueprint-schema,
+ * packages/viewer-shell/src/styles/tokens.css).
+ */
