@@ -5,8 +5,12 @@
 # CSP frame-ancestors restricts who can iframe Studio. Tighten once the
 # architecture-viewer is bound to a stable subdomain (e.g. architecture.archally.dev)
 # and remove *.pages.dev from the allowlist.
+#
+# 2026-05-19: added archally.pro + archally-website.web.app at the request
+# of archally-web (NCv2 conversion-path: iframe the asyncapi-studio on the
+# marketing site's playground / capability subpages).
 
 /*
-  Content-Security-Policy: frame-ancestors https://*.archally.dev https://*.pages.dev
+  Content-Security-Policy: frame-ancestors https://*.archally.dev https://*.pages.dev https://archally.pro https://archally-website.web.app
   Referrer-Policy: same-origin
   X-Content-Type-Options: nosniff

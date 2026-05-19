@@ -44,6 +44,6 @@ Items the deploy and sync workflows expect to exist:
 2. **Label**: `upstream-sync` (color `#0E8A16`) — the workflow creates it via
    `gh label create` if missing, but pre-creating avoids the first-run permission
    prompt.
-3. **Custom domain**: bind `studio.archally.dev` (or chosen subdomain of
+3. **Custom domain**: bind `asyncapi.archally.dev` (or chosen subdomain of
    `*.archally.dev`) to the Pages project once the first deploy succeeds. See
    `docs/2026-04-26-cf-access-policy.md` for the full policy guide.

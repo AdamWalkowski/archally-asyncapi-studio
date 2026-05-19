@@ -18,13 +18,13 @@ every page view, breaking the experience.
    then deploys. Successful run yields a `*.archally-asyncapi-studio.pages.dev`
    preview URL.
 2. **Bind custom domain.** Cloudflare dashboard → Pages → `archally-asyncapi-studio`
-   → Custom domains → Add `studio.archally.dev` (or chosen subdomain). DNS
+   → Custom domains → Add `asyncapi.archally.dev` (or chosen subdomain). DNS
    provisioning is automatic if Cloudflare manages the zone.
 3. **Add hostname to existing Access Application.** Zero Trust → Access →
    Applications → find `archally-architecture-${project}` (or whatever you named
    the architecture-viewer app). Edit → Application configuration → Application
-   domain → add `studio.archally.dev`. Save.
-4. **Verify.** Open `https://studio.archally.dev/?url=https://example.com/spec.yaml`
+   domain → add `asyncapi.archally.dev`. Save.
+4. **Verify.** Open `https://asyncapi.archally.dev/?url=https://example.com/spec.yaml`
    in an incognito window. Expected: one CF Access login, then Studio loads. Open
    the architecture-viewer's AsyncAPI tab in the *same* browser session: Studio
    should load inside the iframe with **no second login prompt**.
