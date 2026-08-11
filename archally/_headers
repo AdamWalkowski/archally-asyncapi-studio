@@ -11,6 +11,6 @@
 # marketing site's playground / capability subpages).
 
 /*
-  Content-Security-Policy: frame-ancestors https://*.archally.dev https://*.pages.dev https://archally.pro https://archally-website.web.app
+  Content-Security-Policy: frame-ancestors https://*.archally.dev https://*.pages.dev https://archally.pro https://archally-website.web.app http://localhost:* http://127.0.0.1:*
   Referrer-Policy: same-origin
   X-Content-Type-Options: nosniff
